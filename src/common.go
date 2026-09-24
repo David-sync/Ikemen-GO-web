@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -1808,6 +1809,17 @@ func OpenFile(filename string) (io.ReadSeekCloser, error) {
 
 		// Return our custom wrapper that closes the main zip archive
 		return &zipMemFileReader{reader: bytesReader, zipArchive: zr}, nil
+	}
+
+	if runtime.GOARCH == "wasm" {
+		// Gọi hàm fetchFromWeb vừa viết ở file sys_wasm.go
+		fileData, err := fetchFromWeb(filename)
+		if err != nil {
+			return nil, err
+		}
+
+		bytesReader := bytes.NewReader(fileData)
+		return &webFileReader{reader: bytesReader}, nil
 	}
 
 	// Not a zip path, open as a normal file
